@@ -1,0 +1,54 @@
+
+name: DobloSmp V6 Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Kaynak kodunu indir
+        uses: actions/checkout@v4
+
+      - name: Java 21 kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Maven ile derle
+        if: hashFiles('pom.xml') != ''
+        run: mvn clean package
+
+      - name: Gradle ile derle
+        if: hashFiles('build.gradle', 'build.gradle.kts') != ''
+        run: |
+          if [ -f gradlew ]; then
+            chmod +x gradlew
+            ./gradlew build
+          else
+            gradle build
+          fi
+
+      - name: Derleme dosyalarını kontrol et
+        run: |
+          if [ ! -f pom.xml ] && [ ! -f build.gradle ] && [ ! -f build.gradle.kts ]; then
+            echo "Maven veya Gradle proje dosyası bulunamadı!"
+            exit 1
+          fi
+
+      - name: JAR dosyasını yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: DobloSmp-V6-JAR
+          path: |
+            **/target/*.jar
+            **/build/libs/*.jar
+          if-no-files-found: error
+          
