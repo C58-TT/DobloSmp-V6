@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths:
-      - 'doblo_build.zip'
+      - '.github/workflows/doblo_build.zip'
       - '**.zip'
       - '.github/workflows/main.yml'
 
@@ -21,10 +21,11 @@ jobs:
       - name: Extract source
         run: |
           mkdir -p source
-          ZIP="doblo_build.zip"
+          ZIP=".github/workflows/doblo_build.zip"
 
           if [ ! -f "$ZIP" ]; then
-            echo "HATA: $ZIP bulunamadi! Repodaki konumunu kontrol et."
+            echo "HATA: $ZIP bulunamadi!"
+            ls -la .github/workflows/
             exit 1
           fi
 
