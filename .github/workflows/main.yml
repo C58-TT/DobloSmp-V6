@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - '.github/workflows/doblo_build.zip'
+      - 'doblo_build.zip'
       - '**.zip'
       - '.github/workflows/main.yml'
 
@@ -20,19 +21,27 @@ jobs:
 
       - name: Extract source
         run: |
+          rm -rf source
           mkdir -p source
-          ZIP=".github/workflows/doblo_build.zip"
 
-          if [ ! -f "$ZIP" ]; then
-            echo "HATA: $ZIP bulunamadi!"
-            ls -la .github/workflows/
+          if [ -f ".github/workflows/doblo_build.zip" ]; then
+            ZIP=".github/workflows/doblo_build.zip"
+          elif [ -f "doblo_build.zip" ]; then
+            ZIP="doblo_build.zip"
+          else
+            ZIP=$(find . -maxdepth 4 -name "*.zip" -print -quit || true)
+          fi
+
+          if [ -z "$ZIP" ] || [ ! -f "$ZIP" ]; then
+            echo "HATA: ZIP dosyasi bulunamadi!"
+            ls -la .github/workflows/ || true
             exit 1
           fi
 
           echo "ZIP bulundu: $ZIP"
           unzip -q "$ZIP" -d source
 
-          echo "Maven dosyalari:"
+          echo "Bulunan pom.xml dosyalari:"
           find source -name pom.xml -print
 
       - name: Set up Java 21
@@ -57,17 +66,25 @@ jobs:
           cd "$PROJECT_DIR"
           mvn -B clean package
 
+          if ! find target -maxdepth 2 -type f -name "*.jar" ! -name "*-sources.jar" ! -name "*-javadoc.jar" ! -name "original-*.jar" | grep -q .; then
+            echo "Uyari: package asamasinda JAR cikmadi, jar:jar deneniyor..."
+            mvn -B jar:jar
+          fi
+
       - name: Prepare JAR
         run: |
+          rm -rf artifacts
           mkdir -p artifacts
 
-          find source -type f -path '*/target/*.jar' \
+          find "$GITHUB_WORKSPACE/source" -type f -path '*/target/*.jar' \
             ! -name '*-sources.jar' \
             ! -name '*-javadoc.jar' \
-            -exec cp {} artifacts/ \;
+            ! -name 'original-*.jar' \
+            -exec cp -v {} artifacts/ \;
 
           if [ -z "$(ls -A artifacts)" ]; then
-            echo "HATA: JAR uretilmedi!"
+            echo "HATA: JAR uretilmedi! target klasor icerigi:"
+            find "$GITHUB_WORKSPACE/source" -path '*/target*' -ls || true
             exit 1
           fi
 
