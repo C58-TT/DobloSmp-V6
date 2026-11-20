@@ -18,28 +18,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-
       - name: Extract source
         run: |
           mkdir -p source
-          
-          ZIP=$(find . -type f -iname "*.zip" -print -quit)
+          ZIP=".github/workflows/DobloSmp_V6_GELISTIRILMIS_KAYNAK.zip"
 
-         
-
-
-          if [ -z "$ZIP" ]; then
-            echo "HATA: ZIP dosyasi GitHub deposunda bulunamadi!"
-            echo "Depodaki ZIP dosyalari:"
-            find . -type f -iname "*.zip"
+          if [ ! -f "$ZIP" ]; then
+            echo "ZIP bulunamadi!"
             exit 1
           fi
 
-          echo "Bulunan dosya: $ZIP"
+          echo "ZIP bulundu: $ZIP"
           unzip -q "$ZIP" -d source
 
-          echo "Bulunan Maven projeleri:"
+          echo "Maven dosyalari:"
           find source -name pom.xml -print
+          
           
 
       - name: Set up Java 21
