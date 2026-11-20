@@ -18,12 +18,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+
       - name: Extract source
         run: |
           mkdir -p source
-          unzip -q .github/workflows/DobloSmp_V6_CALISMA_HAZIRLIK.zip -d source
+
+          ZIP=$(find . -type f -name "DobloSmp_V6_CALISMA_HAZIRLIK.zip" -print -quit)
+
+          if [ -z "$ZIP" ]; then
+            echo "HATA: ZIP dosyasi GitHub deposunda bulunamadi!"
+            echo "Depodaki ZIP dosyalari:"
+            find . -type f -iname "*.zip"
+            exit 1
+          fi
+
+          echo "Bulunan dosya: $ZIP"
+          unzip -q "$ZIP" -d source
+
           echo "Bulunan Maven projeleri:"
           find source -name pom.xml -print
+          
 
       - name: Set up Java 21
         uses: actions/setup-java@v5
