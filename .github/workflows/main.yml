@@ -22,8 +22,11 @@ jobs:
       - name: Extract source
         run: |
           mkdir -p source
+          
+          ZIP=$(find . -type f -iname "*.zip" -print -quit)
 
-          ZIP=$(find . -type f -name "DobloSmp_V6_CALISMA_HAZIRLIK.zip" -print -quit)
+         
+
 
           if [ -z "$ZIP" ]; then
             echo "HATA: ZIP dosyasi GitHub deposunda bulunamadi!"
