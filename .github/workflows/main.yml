@@ -6,49 +6,67 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '**.zip'
+      - '.github/workflows/main.yml'
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Kaynak kodunu indir
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Java 21 kur
-        uses: actions/setup-java@v4
+      - name: Extract source
+        run: |
+          mkdir -p source
+          unzip -q .github/workflows/DobloSmp_V6_CALISMA_HAZIRLIK.zip -d source
+          echo "Bulunan Maven projeleri:"
+          find source -name pom.xml -print
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
 
-      - name: Maven ile derle
-        if: hashFiles('pom.xml') != ''
-        run: mvn clean package
-
-      - name: Gradle ile derle
-        if: hashFiles('build.gradle', 'build.gradle.kts') != ''
+      - name: Build and test
         run: |
-          if [ -f gradlew ]; then
-            chmod +x gradlew
-            ./gradlew build
-          else
-            gradle build
-          fi
+          POM=$(find source -name pom.xml -print -quit)
 
-      - name: Derleme dosyalarını kontrol et
-        run: |
-          if [ ! -f pom.xml ] && [ ! -f build.gradle ] && [ ! -f build.gradle.kts ]; then
-            echo "Maven veya Gradle proje dosyası bulunamadı!"
+          if [ -z "$POM" ]; then
+            echo "HATA: pom.xml bulunamadi!"
             exit 1
           fi
 
-      - name: JAR dosyasını yükle
+          PROJECT_DIR=$(dirname "$POM")
+          echo "Proje dizini: $PROJECT_DIR"
+
+          cd "$PROJECT_DIR"
+          mvn -B clean package
+
+      - name: Prepare JAR
+        run: |
+          mkdir -p artifacts
+
+          find source -type f -path '*/target/*.jar' \
+            ! -name '*-sources.jar' \
+            ! -name '*-javadoc.jar' \
+            -exec cp {} artifacts/ \;
+
+          if [ -z "$(ls -A artifacts)" ]; then
+            echo "HATA: JAR uretilmedi!"
+            exit 1
+          fi
+
+          ls -lah artifacts/
+
+      - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
           name: DobloSmp-V6-JAR
-          path: |
-            **/target/*.jar
-            **/build/libs/*.jar
+          path: artifacts/*.jar
           if-no-files-found: error
           
